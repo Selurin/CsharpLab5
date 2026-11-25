@@ -80,6 +80,10 @@ public class Client
             _city = value;
         }
     }
+    public override string ToString()
+    {
+        return $"ID: {_id}, Фамилия: {_fam}, Имя: {_imya}, Отчество: {_otch}, Город: {_city}";
+    }
 }
 
 public class Order
@@ -161,6 +165,11 @@ public class Order
             _count = value;
         }
     }
+
+    public override string ToString()
+    {
+        return $"ID заказа: {_orderId}, ID клиента: {_clientId}, Дата заказа: {_orderDate}, ID услуги: {_serviceId}, Количество: {_count}";
+    }
 }
 
 public class Service
@@ -234,6 +243,11 @@ public class Service
             _price = value;
         }
     }
+
+    public override string ToString()
+    {
+        return $"ID услуги: {_serviceId}, ID типа услуги: {_typeId}, Название: {_name}, Цена: {_price}";
+    }
 }
 
 public class TypeService
@@ -276,5 +290,9 @@ public class TypeService
             }
             _name = value;
         }
+    }
+    public override string ToString()
+    {
+        return $"ID типа услуги: {_typeId}, Название: {_name}";
     }
 }
