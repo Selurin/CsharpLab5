@@ -1,5 +1,6 @@
-﻿using System;
-using ClosedXML.Excel;
+﻿using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
+using System;
 using System.Linq;
 namespace CsharpLab5
 {
@@ -41,52 +42,83 @@ namespace CsharpLab5
         public void LoadFromExcel()
         {
             if (!File.Exists(FilePath))
+            {
                 throw new FileNotFoundException($"Файл {FilePath} не найден.");
+            }
+
             _clients.Clear();
             _orders.Clear();
             _services.Clear();
             _typeServices.Clear();
 
-            using (var workbook = new XLWorkbook(FilePath))
+            using (var fs = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
             {
-                var clientsSheet = workbook.Worksheet("Клиенты");
-                _clients = clientsSheet.RowsUsed()
-                    .Skip(1)
-                    .Select(row => new Client(
-                    row.Cell(1).GetValue<int>(),
-                    row.Cell(2).GetValue<string>(),
-                    row.Cell(3).GetValue<string>(),
-                    row.Cell(4).GetValue<string>(),
-                    row.Cell(5).GetValue<string>()
-                )).ToList();
+                IWorkbook workbook = WorkbookFactory.Create(fs);
 
-                var ordersSheet = workbook.Worksheet("Заказы");
-                _orders = ordersSheet.RowsUsed()
-                    .Skip(1)
-                    .Select(row => new Order(
-                    row.Cell(1).GetValue<int>(),
-                    row.Cell(2).GetValue<int>(),
-                    row.Cell(3).GetValue<DateOnly>(),
-                    row.Cell(4).GetValue<int>(),
-                    row.Cell(5).GetValue<int>()
-                )).ToList();
-                var servicesSheet = workbook.Worksheet("Услуги");
-                _services = servicesSheet.RowsUsed()
-                    .Skip(1)
-                    .Select(row => new Service(
-                    row.Cell(1).GetValue<int>(),
-                    row.Cell(2).GetValue<int>(),
-                    row.Cell(3).GetValue<string>(),
-                    row.Cell(4).GetValue<int>()
-                )).ToList();
+                ISheet clientsSheet = workbook.GetSheet("Клиенты");
+                for (int i = 1; i <= clientsSheet.LastRowNum; i++)
+                {
+                    IRow row = clientsSheet.GetRow(i);
+                    if (row == null)
+                    {
+                        continue;
+                    }
+                    _clients.Add(new Client(
+                        (int)row.GetCell(0).NumericCellValue,
+                        row.GetCell(1).StringCellValue,
+                        row.GetCell(2).StringCellValue,
+                        row.GetCell(3).StringCellValue,
+                        row.GetCell(4).StringCellValue
+                    ));
+                }
 
-                var typeServicesSheet = workbook.Worksheet("Типы услуг");
-                _typeServices = typeServicesSheet.RowsUsed()
-                    .Skip(1)
-                    .Select(row => new TypeService(
-                    row.Cell(1).GetValue<int>(),
-                    row.Cell(2).GetValue<string>()
-                )).ToList();
+                ISheet ordersSheet = workbook.GetSheet("Заказы");
+                for (int i = 1; i <= ordersSheet.LastRowNum; i++)
+                {
+                    IRow row = ordersSheet.GetRow(i);
+                    if (row == null)
+                    {
+                        continue;
+                    }
+                    DateTime date = DateUtil.GetJavaDate(row.GetCell(2).NumericCellValue);
+                    _orders.Add(new Order(
+                        (int)row.GetCell(0).NumericCellValue,
+                        (int)row.GetCell(1).NumericCellValue,
+                        DateOnly.FromDateTime(date),
+                        (int)row.GetCell(3).NumericCellValue,
+                        (int)row.GetCell(4).NumericCellValue
+                    ));
+                }
+
+                ISheet servicesSheet = workbook.GetSheet("Услуги");
+                for (int i = 1; i <= servicesSheet.LastRowNum; i++)
+                {
+                    IRow row = servicesSheet.GetRow(i);
+                    if (row == null)
+                    {
+                        continue;
+                    }
+                    _services.Add(new Service(
+                        (int)row.GetCell(0).NumericCellValue,
+                        (int)row.GetCell(1).NumericCellValue,
+                        row.GetCell(2).StringCellValue,
+                        (int)row.GetCell(3).NumericCellValue
+                    ));
+                }
+
+                ISheet typeServicesSheet = workbook.GetSheet("Типы услуг");
+                for (int i = 1; i <= typeServicesSheet.LastRowNum; i++)
+                {
+                    IRow row = typeServicesSheet.GetRow(i);
+                    if (row == null)
+                    {
+                        continue;
+                    }
+                    _typeServices.Add(new TypeService(
+                        (int)row.GetCell(0).NumericCellValue,
+                        row.GetCell(1).StringCellValue
+                    ));
+                }
             }
         }
 
@@ -256,7 +288,7 @@ namespace CsharpLab5
             var query = from o in _orders
                         join c in _clients on o.ClientId equals c.Id
                         join s in _services on o.ServiceId equals s.ServiceId
-                        where c.City == "Москва"
+                        where c.City == "г. Москва"
                         orderby o.Count * s.Price descending
                         select $"{c.Fam} {c.Imya} (заказ #{o.OrderId} на сумму {o.Count * s.Price} руб.)";
 
@@ -270,15 +302,89 @@ namespace CsharpLab5
             return result;
         }
 
-        public int GetAutumnVideoUnitsCount()
+        public int GetJulyPolygraphyUnitsCount()
         {
             var query = from o in _orders
                         join s in _services on o.ServiceId equals s.ServiceId
                         join t in _typeServices on s.TypeId equals t.TypeId
-                        where t.Name == "Полиграфия" && o.OrderDate.Month >= 9 && o.OrderDate.Month <= 11
+                        where t.Name == "Полиграфия" && o.OrderDate.Month == 7 && o.OrderDate.Year == 2018
                         select o.Count;
 
             return query.Sum();
+        }
+
+        public void SaveToExcel()
+        {
+            IWorkbook workbook = new HSSFWorkbook();
+            ICellStyle dateStyle = workbook.CreateCellStyle();
+            dateStyle.DataFormat = workbook.CreateDataFormat().GetFormat("dd.MM.yyyy");
+
+            ISheet clientsSheet = workbook.CreateSheet("Клиенты");
+            IRow cHeader = clientsSheet.CreateRow(0);
+            cHeader.CreateCell(0).SetCellValue("Код клиента");
+            cHeader.CreateCell(1).SetCellValue("Фамилия");
+            cHeader.CreateCell(2).SetCellValue("Имя");
+            cHeader.CreateCell(3).SetCellValue("Отчество");
+            cHeader.CreateCell(4).SetCellValue("Место жительства");
+            for (int i = 0; i < _clients.Count; i++)
+            {
+                IRow row = clientsSheet.CreateRow(i + 1);
+                row.CreateCell(0).SetCellValue(_clients[i].Id);
+                row.CreateCell(1).SetCellValue(_clients[i].Fam);
+                row.CreateCell(2).SetCellValue(_clients[i].Imya);
+                row.CreateCell(3).SetCellValue(_clients[i].Otch);
+                row.CreateCell(4).SetCellValue(_clients[i].City);
+            }
+
+            ISheet ordersSheet = workbook.CreateSheet("Заказы");
+            IRow oHeader = ordersSheet.CreateRow(0);
+            oHeader.CreateCell(0).SetCellValue("Код заказа");
+            oHeader.CreateCell(1).SetCellValue("Код клиента");
+            oHeader.CreateCell(2).SetCellValue("Дата заказа");
+            oHeader.CreateCell(3).SetCellValue("Код услуги");
+            oHeader.CreateCell(4).SetCellValue("Количество");
+            for (int i = 0; i < _orders.Count; i++)
+            {
+                IRow row = ordersSheet.CreateRow(i + 1);
+                row.CreateCell(0).SetCellValue(_orders[i].OrderId);
+                row.CreateCell(1).SetCellValue(_orders[i].ClientId);
+                ICell dateCell = row.CreateCell(2);
+                dateCell.SetCellValue(_orders[i].OrderDate.ToDateTime(TimeOnly.MinValue));
+                dateCell.CellStyle = dateStyle;
+                row.CreateCell(3).SetCellValue(_orders[i].ServiceId);
+                row.CreateCell(4).SetCellValue(_orders[i].Count);
+            }
+
+            ISheet servicesSheet = workbook.CreateSheet("Услуги");
+            IRow sHeader = servicesSheet.CreateRow(0);
+            sHeader.CreateCell(0).SetCellValue("Код услуги");
+            sHeader.CreateCell(1).SetCellValue("Код типа");
+            sHeader.CreateCell(2).SetCellValue("Название");
+            sHeader.CreateCell(3).SetCellValue("Стоимость");
+            for (int i = 0; i < _services.Count; i++)
+            {
+                IRow row = servicesSheet.CreateRow(i + 1);
+                row.CreateCell(0).SetCellValue(_services[i].ServiceId);
+                row.CreateCell(1).SetCellValue(_services[i].TypeId);
+                row.CreateCell(2).SetCellValue(_services[i].Name);
+                row.CreateCell(3).SetCellValue(_services[i].Price);
+            }
+
+            ISheet typeServicesSheet = workbook.CreateSheet("Типы услуг");
+            IRow tHeader = typeServicesSheet.CreateRow(0);
+            tHeader.CreateCell(0).SetCellValue("Код типа");
+            tHeader.CreateCell(1).SetCellValue("Название");
+            for (int i = 0; i < _typeServices.Count; i++)
+            {
+                IRow row = typeServicesSheet.CreateRow(i + 1);
+                row.CreateCell(0).SetCellValue(_typeServices[i].TypeId);
+                row.CreateCell(1).SetCellValue(_typeServices[i].Name);
+            }
+
+            using (var fs = new FileStream(FilePath, FileMode.Create, FileAccess.Write))
+            {
+                workbook.Write(fs);
+            }
         }
     }
 }

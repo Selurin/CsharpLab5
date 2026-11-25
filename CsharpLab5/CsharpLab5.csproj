@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ClosedXML" Version="0.105.1" />
+    <PackageReference Include="NPOI" Version="2.8.1" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="11.0.0" />
   </ItemGroup>
 
