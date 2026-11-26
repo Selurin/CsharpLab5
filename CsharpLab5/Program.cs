@@ -208,7 +208,7 @@ namespace CsharpLab5
             switch (choice)
             {
                 case "1":
-                    if (TryReadInt("ID клиента: ", out int clientId))
+                    if (TryReadId("ID клиента", db.GetNextId(1), out int clientId))
                     {
                         Console.Write("Фамилия: ");
                         string fam = Console.ReadLine() ?? string.Empty;
@@ -220,12 +220,12 @@ namespace CsharpLab5
                         string city = Console.ReadLine() ?? string.Empty;
 
                         db.Add(new Client(clientId, fam, imya, otch, city));
-                        Console.WriteLine("Клиент добавлен.");
+                        Console.WriteLine($"Клиент с ID {clientId} добавлен.");
                     }
                     break;
 
                 case "2":
-                    if (TryReadInt("ID заказа: ", out int orderId))
+                    if (TryReadId("ID заказа", db.GetNextId(2), out int orderId))
                     {
                         if (TryReadInt("ID клиента: ", out int orderClientId))
                         {
@@ -236,7 +236,7 @@ namespace CsharpLab5
                                     if (TryReadInt("Количество: ", out int count))
                                     {
                                         db.Add(new Order(orderId, orderClientId, orderDate, orderServiceId, count));
-                                        Console.WriteLine("Заказ добавлен.");
+                                        Console.WriteLine($"Заказ с ID {orderId} добавлен.");
                                     }
                                 }
                             }
@@ -245,7 +245,7 @@ namespace CsharpLab5
                     break;
 
                 case "3":
-                    if (TryReadInt("ID услуги: ", out int serviceId))
+                    if (TryReadId("ID услуги", db.GetNextId(3), out int serviceId))
                     {
                         if (TryReadInt("ID типа услуги: ", out int serviceTypeId))
                         {
@@ -255,20 +255,20 @@ namespace CsharpLab5
                             if (TryReadInt("Стоимость: ", out int price))
                             {
                                 db.Add(new Service(serviceId, serviceTypeId, serviceName, price));
-                                Console.WriteLine("Услуга добавлена.");
+                                Console.WriteLine($"Услуга с ID {serviceId} добавлена.");
                             }
                         }
                     }
                     break;
 
                 case "4":
-                    if (TryReadInt("ID типа услуги: ", out int typeId))
+                    if (TryReadId("ID типа услуги", db.GetNextId(4), out int typeId))
                     {
                         Console.Write("Название типа услуги: ");
                         string typeName = Console.ReadLine() ?? string.Empty;
 
                         db.Add(new TypeService(typeId, typeName));
-                        Console.WriteLine("Тип услуги добавлен.");
+                        Console.WriteLine($"Тип услуги с ID {typeId} добавлен.");
                     }
                     break;
 
@@ -349,6 +349,26 @@ namespace CsharpLab5
                 Console.WriteLine("Неверное значение! Ожидалась дата в формате дд.мм.гггг.");
                 return false;
             }
+        }
+
+        private static bool TryReadId(string prompt, int defaultId, out int value)
+        {
+            Console.Write($"{prompt} (Enter — {defaultId}): ");
+            string input = Console.ReadLine()?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                value = defaultId;
+                return true;
+            }
+
+            if (int.TryParse(input, out value))
+            {
+                return true;
+            }
+
+            Console.WriteLine("Неверное значение! Ожидалось целое число.");
+            return false;
         }
     }
 }

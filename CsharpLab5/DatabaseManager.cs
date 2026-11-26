@@ -262,6 +262,23 @@ namespace CsharpLab5
             }
         }
 
+        public int GetNextId(int tableNumber)
+        {
+            switch (tableNumber)
+            {
+                case 1:
+                    return (from c in _clients select c.Id).DefaultIfEmpty(0).Max() + 1;
+                case 2:
+                    return (from o in _orders select o.OrderId).DefaultIfEmpty(0).Max() + 1;
+                case 3:
+                    return (from s in _services select s.ServiceId).DefaultIfEmpty(0).Max() + 1;
+                case 4:
+                    return (from t in _typeServices select t.TypeId).DefaultIfEmpty(0).Max() + 1;
+                default:
+                    throw new ArgumentException("Неверный номер таблицы.");
+            }
+        }
+
         public List<Service> GetMidPriceServices()
         {
             var query = from s in _services
