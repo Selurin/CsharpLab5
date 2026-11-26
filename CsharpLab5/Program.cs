@@ -5,7 +5,7 @@ namespace CsharpLab5
 {
     internal class Program
     {
-        private const string DefaultFilePath = "LR5-var7.xls";
+        private const string DefaultFilePath = "C:\\Users\\alena\\source\\repos\\LR5-var7.xls";
 
         static void Main(string[] args)
         {
