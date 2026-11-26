@@ -170,7 +170,8 @@ namespace CsharpLab5
 
         public override string ToString()
         {
-            return $"ID заказа: {_orderId}, ID клиента: {_clientId}, Дата заказа: {_orderDate}, ID услуги: {_serviceId}, Количество: {_count}";
+            return $"ID заказа: {_orderId}, ID клиента: {_clientId}, Дата заказа: {_orderDate}," +
+                $" ID услуги: {_serviceId}, Количество: {_count}";
         }
     }
 
